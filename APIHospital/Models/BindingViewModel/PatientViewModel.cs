@@ -15,5 +15,11 @@ namespace APIHospital.Models.BindingViewModel
         public DateTime DateOfBirth { get; set; }
         public bool HasInsurance { get; set; }
         public virtual List<VisitViewModel> Visits { get; set; }
+
+        public PatientViewModel()
+        {
+            Visits = new List<VisitViewModel>();
+        }
+
     }
 }

@@ -17,5 +17,11 @@ namespace APIHospital.Models.Domain
         public bool HasInsurance { get; set; }
 
         public virtual List<Visit> Visits { get; set; }
+
+        public Patient()
+        {
+            Visits = new List<Visit>();
+        }
+
     }
 }

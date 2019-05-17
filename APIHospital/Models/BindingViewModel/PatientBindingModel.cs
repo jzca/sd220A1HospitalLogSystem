@@ -14,6 +14,7 @@ namespace APIHospital.Models.BindingViewModel
         [Required]
         public string LastName { get; set; }
         public string Address { get; set; }
+        [EmailAddress]
         public string Email { get; set; }
         [Required]
         public DateTime DateOfBirth { get; set; }
