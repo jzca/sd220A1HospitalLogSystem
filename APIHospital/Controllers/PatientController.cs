@@ -1,55 +1,129 @@
-﻿using APIHospital.Models;
+﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
+using APIHospital.Models;
+using APIHospital.Models.BindingViewModel;
 using APIHospital.Models.Domain;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Data.Entity;
 using System.Net.Http;
 using System.Web.Http;
 
 namespace APIHospital.Controllers
 {
+    [Authorize]
+
+    //Route: api/{controller}/{action}/{id}
     public class PatientController : ApiController
     {
-        public IHttpActionResult Get()
+        private readonly ApplicationDbContext DbContext;
+
+        public PatientController()
         {
-            var dbContext = new ApplicationDbContext();
-            return Ok(dbContext.Patients.ToList());
+            DbContext = new ApplicationDbContext();
         }
 
+        [HttpGet]
+        public IHttpActionResult GetAll()
+        {
+            var model = DbContext
+                .Patients
+                .ProjectTo<PatientViewModel>()
+                .ToList();
+
+            if (model == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(model);
+        }
+
+        [HttpGet]
         public IHttpActionResult Get(int id)
         {
-            var dbContext = new ApplicationDbContext();
-            return Ok(dbContext.Patients.Where(p => p.Id == id).FirstOrDefault());
+            var patientModel = DbContext.Patients.Where(p => p.Id == id)
+                            .ProjectTo<PatientViewModel>()
+                            .FirstOrDefault();
+
+            if (patientModel == null)
+            {
+                return NotFound();
+            }
+
+
+            return Ok(patientModel);
         }
 
-        public IHttpActionResult Post(Patient patient)
+        [HttpPost]
+        public IHttpActionResult Create(PatientBindingModel model)
         {
-            var dbContext = new ApplicationDbContext();
-            dbContext.Patients.Add(patient);
-            return Ok(patient);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var patient = Mapper.Map<Patient>(model);
+            DbContext.Patients.Add(patient);
+            DbContext.SaveChanges();
+
+            var patientModel = Mapper.Map<PatientViewModel>(patient);
+
+            return Ok(patientModel);
         }
 
-        public IHttpActionResult Put(int id, Patient patient)
+        [HttpPut]
+        public IHttpActionResult Edit(int id, PatientBindingModel model)
         {
-            var dbContext = new ApplicationDbContext();
-            var patient1 = dbContext.Patients.Where(p => p.Id == id).FirstOrDefault();
-            patient1.HasInsurance = patient.HasInsurance;
-            patient1.FirstName = patient.FirstName;
-            patient1.LastName = patient.LastName;
-            dbContext.SaveChanges();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
-            return Ok(patient);
+            var patient = DbContext.Patients.Where(p => p.Id == id).FirstOrDefault();
+
+            if (patient == null)
+            {
+                return NotFound();
+            }
+
+            Mapper.Map(model, patient);
+
+            DbContext.SaveChanges();
+
+            var patientModel = Mapper.Map<PatientViewModel>(patient);
+
+            return Ok(patientModel);
         }
         
-        [Route("api/{id:int}/recordvisit")]
-        public IHttpActionResult RecordVisit(int id, Visit visit)
+        [HttpPost]
+        public IHttpActionResult RecordVisit(int id, VisitBindingModel model)
         {
-            var dbContext = new ApplicationDbContext();
-            var patient = dbContext.Patients.Where(p => p.Id == id).FirstOrDefault();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var patient = DbContext.Patients.Where(p => p.Id == id).FirstOrDefault();
+
+            if (patient == null)
+            {
+                return NotFound();
+            }
+
+            var visit = Mapper.Map<Visit>(model);
+            visit.Date = DateTime.Now;
+            visit.PatientId = id;
+
             patient.Visits.Add(visit);
-            dbContext.SaveChanges();
-            return Ok(patient);
+            DbContext.SaveChanges();
+
+            var visitModel = Mapper.Map<VisitViewModel>(visit);
+            return Ok(visitModel);
+
         }
     }
 }
